@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import { BackgroundBeams } from "@/components/ui/background-beams";
+import Link from "next/link";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -14,8 +16,9 @@ export default function Login() {
   };
 
   return (
-    <>
-      <div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+    <div className="antialiased">
+      <BackgroundBeams />
+      <div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8 relative z-10">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <img
             alt="Your Company"
@@ -80,15 +83,15 @@ export default function Login() {
 
           <p className="text-center text-sm text-gray-500">
             Not a user?{" "}
-            <a
-              href="#"
+            <Link
+              href="/register"
               className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
             >
               Get Started Now!
-            </a>
+            </Link>
           </p>
         </div>
       </div>
-    </>
+    </div>
   );
 }
