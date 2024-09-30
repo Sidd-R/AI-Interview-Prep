@@ -2,33 +2,31 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { ChevronRightIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { BackgroundBeams } from "@/components/ui/background-beams";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { loginUser } from "@/features/user";
 import { useRouter } from "next/navigation";
 
-const skills = [
-  "Frontend Development",
-  "Backend Development",
-  "Blockchain",
-  "Machine Learning",
-  "Data Science",
-  "UI/UX Design",
-  "Data Structures and Algorithms",
-  "Competitive Programming",
-  "Cybersecurity",
-  "Cloud Computing",
-];
-
-const goals = [
-  "Prepare for placements",
-  "Learn new skills",
-  "Improve existing skills",
-]
-
 export default function Register() {
+  const skills = [
+    "Frontend Development",
+    "Backend Development",
+    "Blockchain",
+    "Machine Learning",
+    "Data Science",
+    "UI/UX Design",
+    "Data Structures and Algorithms",
+    "Competitive Programming",
+    "Cybersecurity",
+    "Cloud Computing",
+  ];
 
-  const dispatch = useDispatch();
+  const goals = [
+    "Prepare for placements",
+    "Learn new skills",
+    "Improve existing skills",
+  ];
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -42,6 +40,8 @@ export default function Register() {
   const [selectedSkills, setSelectedSkills] = useState(
     new Array(skills.length).fill(false)
   );
+
+  const dispatch = useDispatch();
 
   const handleSkillSelection = (skillIndex: number) => {
     if (selectedSkills[skillIndex]) {
@@ -84,38 +84,46 @@ export default function Register() {
 
   const handleSubmit = async () => {
     const skillsArr = skills.filter((_, i) => selectedSkills[i]);
-    const skillsRatingArr = selectedSkillsRating.filter((_, i) => selectedSkills[i]);
+    const skillsRatingArr = selectedSkillsRating.filter(
+      (_, i) => selectedSkills[i]
+    );
 
-    const skillsToRating = []
+    const skillsToRating = [];
 
     for (let i = 0; i < skillsArr.length; i++) {
-        skillsToRating.push({skill: skillsArr[i], rating: skillsRatingArr[i]});
+      skillsToRating.push({ skill: skillsArr[i], rating: skillsRatingArr[i] });
     }
 
     const requestBody = {
-        name: name,
-        email: email,
-        password: password,
-        skills: skillsToRating
-    }
+      name: name,
+      email: email,
+      password: password,
+      skills: skills.filter((_, i) => selectedSkills[i]),
+      skillsRating: selectedSkillsRating.filter((_, i) => selectedSkills[i]),
+      goal: goals[goal],
+    };
 
     console.log(requestBody);
 
-    await axios.post("http://localhost:5000/register", requestBody).then((res) => {
+    await axios
+      .post("http://localhost:5000/register", requestBody)
+      .then((res) => {
         console.log(res.data);
         dispatch(loginUser(res.data));
         toast.success("Logged in successfully");
         setTimeout(() => {
-          navigate.replace("/");
+          navigate.replace("/dashboard");
         }, 1500);
-    }).catch((err) => {
+      })
+      .catch((err) => {
         console.log(err);
-    });
+      });
   };
 
   return (
-    <>
-      <div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-8 lg:px-8">
+    <div className="antialiased">
+      <BackgroundBeams />
+      <div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-8 lg:px-8 relative z-10">
         {/* Progress Bar */}
         <div className="w-[80%] mx-auto h-4 mb-10 bg-gray-200 rounded-full absolute top-20 left-[50%] translate-x-[-50%]">
           <div
@@ -142,12 +150,12 @@ export default function Register() {
           </button>
         )}
         {index === 3 && (
-            <button
-              className="bottom-20 translate-x-[-50%] left-[50%] absolute x-3 py-2 text-lg sm:px-8 sm:py-4 text-white bg-primary-500 rounded-xl"
-              onClick={handleSubmit}
-            >
-                Submit
-            </button>
+          <button
+            className="bottom-20 translate-x-[-50%] left-[50%] absolute x-3 py-2 text-lg sm:px-8 sm:py-4 text-white bg-primary-500 rounded-xl"
+            onClick={handleSubmit}
+          >
+            Submit
+          </button>
         )}
         {/* Step 1: User Information */}
         {index === 0 && (
@@ -299,9 +307,7 @@ export default function Register() {
                 <button
                   key={currgoal}
                   className={`px-5 py-2 border-2 rounded-full ${
-                    index === goal
-                      ? "border-primary-500"
-                      : "border-gray-300"
+                    index === goal ? "border-primary-500" : "border-gray-300"
                   }`}
                   onClick={() => setGoal(index)}
                 >
@@ -312,6 +318,6 @@ export default function Register() {
           </>
         )}
       </div>
-    </>
+    </div>
   );
 }
