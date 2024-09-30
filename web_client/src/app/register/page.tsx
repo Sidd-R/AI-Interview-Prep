@@ -116,7 +116,7 @@ export default function Register() {
         )}
         {index === 3 && (
             <button
-              className="top-[50%] translate-y-[-50%] right-20 absolute x-3 py-2 text-sm sm:px-6 sm:py-4 text-white bg-primary-500"
+              className="bottom-20 translate-x-[-50%] left-[50%] absolute x-3 py-2 text-lg sm:px-8 sm:py-4 text-white bg-primary-500 rounded-xl"
               onClick={handleSubmit}
             >
                 Submit
