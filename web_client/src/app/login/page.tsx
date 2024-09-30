@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { BackgroundBeams } from "@/components/ui/background-beams";
@@ -7,6 +8,8 @@ import Link from "next/link";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const navigate = useRouter();
 
   const handleSubmit = () => {
     if (!email || !password) {
@@ -86,6 +89,7 @@ export default function Login() {
             <Link
               href="/register"
               className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
+              onClick={() => navigate.push("/register")}
             >
               Get Started Now!
             </Link>
