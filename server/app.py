@@ -1,127 +1,132 @@
 from flask import Flask, request, jsonify
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-torch.random.manual_seed(0)
-from utils.pdfread import pdf_read
-import ast
+from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO
+from werkzeug.security import generate_password_hash, check_password_hash
+import json
+from flask_cors import CORS
+import cv2, base64, io
+import numpy as np
+from PIL import Image
 
+# Initialize Flask and Flask-SocketIO
 app = Flask(__name__)
+# CORS(app)
+app.config["SECRET_KEY"] = "secret!"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///users.db"
+db = SQLAlchemy(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Initialize the pipeline
-model = AutoModelForCausalLM.from_pretrained(
-    "microsoft/Phi-3.5-mini-instruct",
-    device_map="cuda",
-    torch_dtype="auto",
-    trust_remote_code=True,
-    low_cpu_mem_usage=True,
-)
-tokenizer = AutoTokenizer.from_pretrained("microsoft/Phi-3.5-mini-instruct")
+CORS(app)
 
-pipe = pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-)
+# User model
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    name = db.Column(db.String(80), nullable=False)
+    skills = db.Column(db.String(300), nullable=True)
 
-generation_args = {
-    "max_new_tokens": 500,
-    "return_full_text": False,
-    "temperature": None,
-    "do_sample": False,
-}
 
-def assess_candidate_response(question, answer):
-    assessment = [
-        {"role": "system", "content": "You are a helpful AI assistant."},
-        {"role": "user", "content": f"""
-        Question:
-        {question}
+# Create the database
+with app.app_context():
+    db.create_all()
 
-        Candidate Response:
-        {answer}
 
-        You have to assess the candidate response and rate them from 1 to 5 in terms of grammar, answer relevancy, and fluency.
-        Format the answer in list [grammar_score, relevancy_score, fluency_score] and just return the list, no explanation needed.
-        """.strip()}
-    ]
+# Registration endpoint
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    name = data.get("name")
+    email = data.get("email")
+    password = data.get("password")
+    skills = data.get("skills")
 
-    output = pipe(assessment, **generation_args)
-    assess_result = output[0]['generated_text'].strip()
+    if User.query.filter_by(name=name).first():
+        return jsonify({"message": "User already exists"}), 400
+
+    hashed_password = generate_password_hash(password)
+    new_user = User(
+        name=name, password=hashed_password, email=email, skills=json.dumps(skills)
+    )
+    db.session.add(new_user)
+    db.session.commit()
+
+    return (
+        jsonify(
+            {
+                "id": new_user.id,
+                "email": new_user.email,
+                "name": new_user.name,
+                "skills": json.loads(new_user.skills),
+            }
+        ),
+        201,
+    )
+
+
+# Login endpoint
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    user = User.query.filter_by(email=email).first()
+
+    if not user or not check_password_hash(user.password, password):
+        return jsonify({"message": "Invalid credentials"}), 401
+
+    # return user profile
+    return (
+        jsonify(
+            {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "skills": json.loads(user.skills),
+            }
+        ),
+        200,
+    )
+
+
+@app.route("/userInfo", methods=["GET"])
+def userInfo():
+    data = request.get_json()
+    id = data.get("id")
+    user = User.query.filter_by(id=id).first()
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    return (
+        jsonify(
+            {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "skills": json.loads(user.skills),
+            }
+        ),
+        200,
+    )
+
+@socketio.on("image-tech")
+def image_tech(data):
+    image = data["image"]
+    image = image.split(",")[1]
+    # print("Received image")
+    # sbuf = io.StringIO()
+    # sbuf.write(image)
+
+    # decode and convert into image
+    b = io.BytesIO(base64.b64decode(image))
+    pimg = Image.open(b)
     
-    # Attempt to parse the string as a Python list
-    try:
-        scores = ast.literal_eval(assess_result)
-        if isinstance(scores, list) and len(scores) == 3 and all(isinstance(score, int) for score in scores):
-            return scores
-    except:
-        pass
-    
-    # If parsing fails or the result is not in the expected format, return a default score
-    return [3, 3, 3]  # Default moderate scores
-
-def generate_interview_question(resume_text):
-    start_question = [
-        {"role": "system", "content": "You are a helpful AI assistant."},
-        {"role": "user", "content": f"""
-        {resume_text}
-
-        You have the candidate resume above. Ask one short technical question which gives a good start to the interview process.
-        Format of the output has to be just one question, no explanation needed.
-        """.strip()}
-    ]
-
-    output = pipe(start_question, **generation_args)
-    return output[0]['generated_text'].strip()
-
-def generate_continuation_question(previous_question, candidate_answer):
-    continue_question = [
-        {"role": "system", "content": "You are a helpful AI assistant."},
-        {"role": "user", "content": f"""
-        {previous_question}
-
-        Candidate response:
-        {candidate_answer}
-
-        You have to ask a short continue question based on the candidate response.
-        Format of output would be just one new question.
-        """.strip()}
-    ]
-
-    output = pipe(continue_question, **generation_args)
-    return output[0]['generated_text'].strip()
-
-previous_question = ""
-
-@app.route('/interview_question', methods=['GET'])
-def interview():
-    # data = request.json
-    # resume_text = data.get('resume', '')
-    resume_text = pdf_read()
-    
-    if not resume_text:
-        return jsonify({"error": "Resume text is required"}), 400
-
-    question = generate_interview_question(resume_text)
-    previous_question = question
-    return jsonify({"question": question})
+    # save image
+    pimg.save("image.jpg")
 
 
-@app.route('/new_question', methods=['GET'])
-def new_question():
-    answer = "I am poor"
-    continuation_question = generate_continuation_question(previous_question, answer)
-    return jsonify({"question": continuation_question})
-
-@app.route('/assess_question', methods=['GET'])
-def assess():
-    question = previous_question
-    candidate_answer = "I am poor"
-    assessment_scores = assess_candidate_response(question, candidate_answer)
-    return jsonify({
-        "grammar_score": assessment_scores[0],
-        "relevancy_score": assessment_scores[1],
-        "fluency_score": assessment_scores[2]
-    })
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# Run the server
+if __name__ == "__main__":
+    socketio.run(app, debug=True)

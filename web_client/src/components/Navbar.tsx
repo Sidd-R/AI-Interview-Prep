@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Dialog,
@@ -10,8 +10,23 @@ import {
   TransitionChild,
 } from "@headlessui/react";
 import { XMarkIcon, Bars3Icon } from "@heroicons/react/24/outline";
+import { useDispatch } from "react-redux";
+import { loginUser } from "@/features/user";
 
 const Navbar = () => {
+  const navigate = useRouter();
+  const dispatch = useDispatch();
+  useEffect(() => {
+    const login = localStorage.getItem("login");
+
+    if (!login && pathname !== "/login" && pathname !== "/register") {
+      navigate.push("/login");
+    } else if (login && (pathname === "/login" || pathname === "/register")) {
+      dispatch(loginUser(JSON.parse(login)));
+      navigate.push("/");
+    }
+  }, []);
+
   const [open, setOpen] = useState(false);
 
   const pathname = usePathname();
@@ -42,9 +57,9 @@ const Navbar = () => {
             Services
           </Link>
         </div>
-        <button className="px-3 py-2 text-sm sm:px-6 sm:py-4 text-white bg-primary-500 ml-8 book-now">
+        <Link type="button" href={"/login"} className="px-3 py-2 text-sm sm:px-6 sm:py-4 text-white bg-primary-500 ml-8 hover:text-white">
           Get Started
-        </button>
+        </Link>
       </div>
       <Dialog open={open} onClose={setOpen} className="relative z-[3000]">
         <Transition
