@@ -8,24 +8,25 @@ import { useDispatch } from "react-redux";
 import { loginUser } from "@/features/user";
 import { useRouter } from "next/navigation";
 
-const skills = [
-  "Frontend Development",
-  "Backend Development",
-  "Blockchain",
-  "Machine Learning",
-  "Data Science",
-  "UI/UX Design",
-  "Data Structures and Algorithms",
-  "Competitive Programming",
-  "Cybersecurity",
-  "Cloud Computing",
-];
+export default function Register() {
+  const skills = [
+    "Frontend Development",
+    "Backend Development",
+    "Blockchain",
+    "Machine Learning",
+    "Data Science",
+    "UI/UX Design",
+    "Data Structures and Algorithms",
+    "Competitive Programming",
+    "Cybersecurity",
+    "Cloud Computing",
+  ];
 
   const goals = [
     "Prepare for placements",
     "Learn new skills",
     "Improve existing skills",
-  ]
+  ];
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -39,6 +40,8 @@ const skills = [
   const [selectedSkills, setSelectedSkills] = useState(
     new Array(skills.length).fill(false)
   );
+
+  const dispatch = useDispatch();
 
   const handleSkillSelection = (skillIndex: number) => {
     if (selectedSkills[skillIndex]) {
@@ -81,12 +84,14 @@ const skills = [
 
   const handleSubmit = async () => {
     const skillsArr = skills.filter((_, i) => selectedSkills[i]);
-    const skillsRatingArr = selectedSkillsRating.filter((_, i) => selectedSkills[i]);
+    const skillsRatingArr = selectedSkillsRating.filter(
+      (_, i) => selectedSkills[i]
+    );
 
-    const skillsToRating = []
+    const skillsToRating = [];
 
     for (let i = 0; i < skillsArr.length; i++) {
-        skillsToRating.push({skill: skillsArr[i], rating: skillsRatingArr[i]});
+      skillsToRating.push({ skill: skillsArr[i], rating: skillsRatingArr[i] });
     }
 
     const requestBody = {
@@ -100,16 +105,19 @@ const skills = [
 
     console.log(requestBody);
 
-    await axios.post("http://localhost:5000/register", requestBody).then((res) => {
+    await axios
+      .post("http://localhost:5000/register", requestBody)
+      .then((res) => {
         console.log(res.data);
         dispatch(loginUser(res.data));
         toast.success("Logged in successfully");
         setTimeout(() => {
-          navigate.replace("/");
+          navigate.replace("/dashboard");
         }, 1500);
-    }).catch((err) => {
+      })
+      .catch((err) => {
         console.log(err);
-    });
+      });
   };
 
   return (
