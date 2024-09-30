@@ -4,9 +4,10 @@ from flask_socketio import SocketIO
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 from flask_cors import CORS
-import cv2, base64, io
+import cv2, base64, io, os
 import numpy as np
 from PIL import Image
+from resumeToText import pdf_read
 
 # Initialize Flask and Flask-SocketIO
 app = Flask(__name__)
@@ -110,21 +111,33 @@ def userInfo():
         ),
         200,
     )
+    
+
+@app.route("/resume-text", methods=["POST"])
+def start_tech_interview():
+    # get resume file 
+    resume = request.files["resume"]
+    
+    resume.save("resume.pdf")
+    resume_text = pdf_read()
+    
+    # delete the resume file
+    os.remove("resume.pdf")
+    
+    return jsonify({"resume": resume_text})
+    
+    
+
 
 @socketio.on("image-tech")
 def image_tech(data):
     image = data["image"]
     image = image.split(",")[1]
-    # print("Received image")
-    # sbuf = io.StringIO()
-    # sbuf.write(image)
 
     # decode and convert into image
     b = io.BytesIO(base64.b64decode(image))
     pimg = Image.open(b)
     
-    # save image
-    pimg.save("image.jpg")
 
 
 # Run the server
