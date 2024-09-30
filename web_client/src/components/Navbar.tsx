@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Dialog,
@@ -10,8 +10,23 @@ import {
   TransitionChild,
 } from "@headlessui/react";
 import { XMarkIcon, Bars3Icon } from "@heroicons/react/24/outline";
+import { useDispatch } from "react-redux";
+import { loginUser } from "@/features/user";
 
 const Navbar = () => {
+  const navigate = useRouter();
+  const dispatch = useDispatch();
+  useEffect(() => {
+    const login = localStorage.getItem("login");
+
+    if (!login && pathname !== "/login" && pathname !== "/register") {
+      navigate.push("/login");
+    } else if (login && (pathname === "/login" || pathname === "/register")) {
+      dispatch(loginUser(JSON.parse(login)));
+      navigate.push("/");
+    }
+  }, []);
+
   const [open, setOpen] = useState(false);
 
   const pathname = usePathname();

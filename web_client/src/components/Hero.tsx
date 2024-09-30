@@ -1,5 +1,8 @@
 import React from "react";
 import Image from "next/image";
+import InterviewAnimation from '@/lottie/Animation - 1727709811461.json';
+import TechGlobe from '@/lottie/SpinningGlobe.json';
+import Lottie from "lottie-react";
 
 type HeroProps = {
   type?: string;
@@ -39,13 +42,15 @@ const Hero = ({ type, title }: HeroProps) => {
           </div>
         </div>
       </div>
-      <img
+      {/* <img
         src="/images/Hero.png"
         alt="Hero"
         className="w-[240px] mb-2 sm:mb-0 sm:w-[550px] rounded-2xl"
         height={1000}
         width={1000}
-      />
+      /> */}
+            <Lottie animationData={InterviewAnimation}  loop className="w-[240px] mb-2 sm:mb-0 sm:w-[550px] rounded-2xl"/>
+
     </section>
   );
 };
