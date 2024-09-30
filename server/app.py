@@ -8,6 +8,11 @@ import cv2, base64, io, os
 import numpy as np
 from PIL import Image
 from resumeToText import pdf_read
+from questionGenerator import (
+    generate_continuation_question,
+    generate_interview_question,
+    assess_candidate_response,
+)
 
 # Initialize Flask and Flask-SocketIO
 app = Flask(__name__)
@@ -18,6 +23,7 @@ db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 CORS(app)
+
 
 # User model
 class User(db.Model):
@@ -111,22 +117,36 @@ def userInfo():
         ),
         200,
     )
-    
 
-@app.route("/resume-text", methods=["POST"])
+
+@app.route("/start-tech-interview", methods=["POST"])
 def start_tech_interview():
-    # get resume file 
+    # get resume file
     resume = request.files["resume"]
-    
+
     resume.save("resume.pdf")
     resume_text = pdf_read()
-    
+
     # delete the resume file
     os.remove("resume.pdf")
-    
-    return jsonify({"resume": resume_text})
-    
-    
+
+    question = generate_interview_question(resume_text)
+
+    return jsonify({"resume": resume_text, "question": question})
+
+@app.route("/next-tech-question", methods=["POST"])
+def next_tech_question():
+    data = request.get_json()
+    previous_question = data.get("previous_question")
+    answer = data.get("answer")
+    assessment_scores = assess_candidate_response(previous_question, answer)
+    question = generate_continuation_question(previous_question, answer)
+
+    return jsonify({"question": question, "scores": {
+        "grammar_score": assessment_scores[0],
+        "relevancy_score": assessment_scores[1],
+        "fluency_score": assessment_scores[2]
+    }})
 
 
 @socketio.on("image-tech")
@@ -137,7 +157,6 @@ def image_tech(data):
     # decode and convert into image
     b = io.BytesIO(base64.b64decode(image))
     pimg = Image.open(b)
-    
 
 
 # Run the server

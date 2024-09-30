@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit'
 import userReducer from './features/user'
-
+import techInterviewReducer from './features/techInterview'
 export const store = configureStore({
   reducer: {
-    user: userReducer
+    user: userReducer,
+    techInterview: techInterviewReducer,
+
   },
 })
 
