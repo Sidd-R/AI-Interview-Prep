@@ -71,7 +71,7 @@ export default function Page() {
                 <div className="flex flex-wrap gap-2">
                   {userData.skills.map((skill, index) => (
                     <span key={index} className="px-2 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-                      {skill}
+                      {skill.skill}
                     </span>
                   ))}
                   {userData.skills.length === 0 && (
