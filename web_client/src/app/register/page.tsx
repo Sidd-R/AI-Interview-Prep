@@ -98,9 +98,7 @@ export default function Register() {
       name: name,
       email: email,
       password: password,
-      skills: skills.filter((_, i) => selectedSkills[i]),
-      skillsRating: selectedSkillsRating.filter((_, i) => selectedSkills[i]),
-      goal: goals[goal],
+      skills: skillsToRating,
     };
 
     console.log(requestBody);

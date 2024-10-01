@@ -15,7 +15,7 @@ with io.open(audio_file, 'rb') as f:
 config = speech.RecognitionConfig(
     encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
     sample_rate_hertz=16000,
-    language_code='en-US'
+    language_code='en-US',
 )
 
 response = client.recognize(config=config, audio=audio)
