@@ -4,19 +4,38 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import Link from "next/link";
+import axios from "axios";
+import { useDispatch } from "react-redux";
+import { loginUser } from "@/features/user";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const navigate = useRouter();
+  const dispatch = useDispatch();
 
   const handleSubmit = () => {
     if (!email || !password) {
       toast.error("Please fill all the fields");
       return;
     }
-  };
+
+    console.log('ss',email, password);
+    
+
+
+    axios.post('http://localhost:5000/login', { email, password }).then((res) => {
+        localStorage.setItem("login", res.data
+        );
+        console.log(res.data);
+        dispatch(loginUser(res.data));
+        navigate.push("/dashboard");
+    }).catch((err) => {
+        console.log(err);
+    });
+  }
+
 
   return (
     <div className="antialiased">
@@ -76,7 +95,7 @@ export default function Login() {
 
           <div className="mt-5">
             <button
-              type="submit"
+              
               className="flex w-full justify-center rounded-md bg-primary-500 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               onClick={handleSubmit}
             >

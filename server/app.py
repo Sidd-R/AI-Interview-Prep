@@ -1,3 +1,4 @@
+import logging
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
@@ -13,6 +14,7 @@ from questionGenerator import (
     generate_interview_question,
     assess_candidate_response,
 )
+from speech_to_text import transcribe_audio
 
 # Initialize Flask and Flask-SocketIO
 app = Flask(__name__)
@@ -21,6 +23,10 @@ app.config["SECRET_KEY"] = "secret!"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///users.db"
 db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Set logging level to WARNING to suppress INFO logs
+logging.getLogger('socketio').setLevel(logging.ERROR)
+logging.getLogger('engineio').setLevel(logging.ERROR)
 
 CORS(app)
 
@@ -121,26 +127,54 @@ def userInfo():
 
 @app.route("/start-tech-interview", methods=["POST"])
 def start_tech_interview():
+    # return jsonify({"question": "What is your name?",'resume':'resume'})
+
     # get resume file
     resume = request.files["resume"]
 
     resume.save("resume.pdf")
+
+    print("Resume saved")
+
     resume_text = pdf_read()
 
     # delete the resume file
     os.remove("resume.pdf")
 
+    print("Resume read")
+
     question = generate_interview_question(resume_text)
+
+    print("Question generated", question)
 
     return jsonify({"resume": resume_text, "question": question})
 
 @app.route("/next-tech-question", methods=["POST"])
 def next_tech_question():
-    data = request.get_json()
-    previous_question = data.get("previous_question")
-    answer = data.get("answer")
-    assessment_scores = assess_candidate_response(previous_question, answer)
-    question = generate_continuation_question(previous_question, answer)
+    previous_question = request.values.get("previous_question")
+    answer_audio = request.files["answer_audio"]
+    question_count = int(request.values.get("question_count"))
+
+
+    # answer_audio.save("answer.wav")
+    answer = "ans"#transcribe_audio("answer.wav")
+    # os.remove("answer.wav")
+
+    if question_count == 2:
+        assessment_scores = assess_candidate_response(previous_question, answer, question_count)
+
+        return jsonify({"scores": {
+            "grammar_score": assessment_scores[0],
+            "relevancy_score": assessment_scores[1],
+            "fluency_score": assessment_scores[2]
+        }})
+    
+
+    assessment_scores = assess_candidate_response(previous_question, answer, question_count)
+    question = generate_continuation_question(previous_question, answer, question_count)
+
+    print("Question generated", question)
+    print("Assessment scores", assessment_scores)
 
     return jsonify({"question": question, "scores": {
         "grammar_score": assessment_scores[0],
@@ -151,12 +185,13 @@ def next_tech_question():
 
 @socketio.on("image-tech")
 def image_tech(data):
-    image = data["image"]
-    image = image.split(",")[1]
+    pass
+    # image = data["image"]
+    # image = image.split(",")[1]
 
-    # decode and convert into image
-    b = io.BytesIO(base64.b64decode(image))
-    pimg = Image.open(b)
+    # # decode and convert into image
+    # b = io.BytesIO(base64.b64decode(image))
+    # pimg = Image.open(b)
 
 
 # Run the server
